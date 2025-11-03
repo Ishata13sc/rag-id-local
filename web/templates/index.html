@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html
+  lang="en"
+  x-data="{dark: localStorage.theme==='dark', showBatch:false}"
+  x-init="$watch('dark', v => {document.documentElement.classList.toggle('dark', v); localStorage.theme = v ? 'dark' : 'light'})"
+  :class="{'dark': dark}"
+>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: {
+                50: "#eff6ff",
+                100: "#dbeafe",
+                200: "#bfdbfe",
+                300: "#93c5fd",
+                400: "#60a5fa",
+                500: "#3b82f6",
+                600: "#2563eb",
+                700: "#1d4ed8",
+                800: "#1e40af",
+                900: "#1e3a8a",
+              },
+              accent: {
+                50: "#f0fdfa",
+                100: "#ccfbf1",
+                200: "#99f6e4",
+                300: "#5eead4",
+                400: "#2dd4bf",
+                500: "#14b8a6",
+                600: "#0d9488",
+                700: "#0f766e",
+                800: "#115e59",
+                900: "#134e4a",
+              },
+              warning: { 500: "#f59e0b" },
+              rose: { 500: "#f43f5e" },
+            },
+            boxShadow: { soft: "0 10px 30px rgba(2,6,23,.08)" },
+          },
+        },
+        darkMode: "class",
+      };
+    </script>
+    <script
+      defer
+      src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"
+    ></script>
+    <script defer src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <title>RAG-ID Local</title>
+  </head>
+  <body
+    class="bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 min-h-screen"
+  >
+    <div class="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
+      <header class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div
+            class="h-10 w-10 rounded-xl bg-primary-600 text-white grid place-items-center font-bold shadow-soft"
+          >
+            R
+          </div>
+          <div>
+            <h1 class="text-xl md:text-2xl font-semibold">RAG-ID Local</h1>
+            <p class="text-sm text-slate-500 dark:text-slate-400">
+              FAISS + SQLite • Offline-first • Tailwind • HTMX
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <button
+            class="px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+            @click="dark=!dark"
+            x-text="dark ? 'Light' : 'Dark'"
+          ></button>
+          <span
+            id="toast"
+            class="hidden px-3 py-2 text-sm rounded-md bg-primary-600 text-white"
+          ></span>
+        </div>
+      </header>
+
+      <main class="grid md:grid-cols-2 gap-6">
+        <section
+          class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 md:p-6 shadow-soft"
+        >
+          <h2 class="text-lg font-semibold mb-4">Upload</h2>
+
+          <form
+            hx-post="/upload"
+            hx-encoding="multipart/form-data"
+            hx-target="#upload-result"
+            hx-swap="innerHTML"
+            class="group relative border-2 border-dashed rounded-2xl p-6 text-center transition hover:border-primary-400 dark:hover:border-primary-500 border-slate-200 dark:border-slate-700"
+          >
+            <input
+              type="file"
+              name="file"
+              class="absolute inset-0 opacity-0 cursor-pointer"
+            />
+            <div class="pointer-events-none">
+              <div
+                class="mx-auto h-12 w-12 rounded-xl bg-primary-50 dark:bg-primary-900/40 text-primary-600 dark:text-primary-300 grid place-items-center mb-3"
+              >
+                ⬆
+              </div>
+              <div class="text-sm">Drag & drop or</div>
+              <div
+                class="inline-flex mt-2 px-4 py-2 rounded-lg bg-primary-600 text-white"
+              >
+                Browse files
+              </div>
+            </div>
+          </form>
+          <div id="upload-result" class="mt-3 text-sm"></div>
+
+          <form
+            hx-post="/upload_multi"
+            hx-encoding="multipart/form-data"
+            hx-target="#upload-multi-result"
+            hx-swap="innerHTML"
+            class="mt-4"
+          >
+            <div class="flex items-center gap-3">
+              <input
+                type="file"
+                name="files"
+                multiple
+                class="hidden"
+                id="multi-input"
+              />
+              <label
+                for="multi-input"
+                class="px-4 py-2 rounded-lg bg-accent-600 text-white cursor-pointer"
+                >Upload Multiple</label
+              >
+            </div>
+          </form>
+          <div id="upload-multi-result" class="mt-3 text-sm"></div>
+        </section>
+
+        <section
+          class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 md:p-6 shadow-soft"
+        >
+          <h2 class="text-lg font-semibold mb-4">Ingest</h2>
+
+          <div class="flex items-center gap-3">
+            <form
+              hx-get="/admin/list_uploads"
+              hx-target="#ingest-list"
+              hx-swap="innerHTML"
+            >
+              <button
+                class="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                Show uploads
+              </button>
+            </form>
+            <button
+              class="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+              @click="showBatch=!showBatch"
+              x-text="showBatch?'Hide batch':'Batch ingest'"
+            ></button>
+          </div>
+
+          <div class="mt-3">
+            <div id="ingest-list" class="grid md:grid-cols-2 gap-3"></div>
+
+            <div class="mt-3 flex items-center gap-2 text-sm">
+              <svg
+                id="ingest-ind"
+                class="hidden animate-spin h-4 w-4 text-primary-600"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
+                <circle
+                  class="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  stroke-width="4"
+                ></circle>
+                <path
+                  class="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                ></path>
+              </svg>
+              <div
+                id="ingest-result"
+                class="text-slate-600 dark:text-slate-300"
+              ></div>
+            </div>
+          </div>
+
+          <div class="mt-4" x-show="showBatch">
+            <form
+              hx-post="/ingest_multi"
+              hx-target="#ingest-result"
+              hx-indicator="#ingest-ind"
+              hx-swap="innerHTML"
+              class="space-y-2"
+            >
+              <textarea
+                name="filenames"
+                placeholder="one file per line, e.g.
+file1.pdf
+file2.docx"
+                class="w-full h-28 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"
+              ></textarea>
+              <button
+                class="px-3 py-2 rounded-lg bg-accent-600 text-white hover:bg-accent-700"
+              >
+                Run batch ingest
+              </button>
+            </form>
+          </div>
+        </section>
+
+        <section
+          class="md:col-span-2 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 md:p-6 shadow-soft"
+        >
+          <h2 class="text-lg font-semibold mb-4">Search</h2>
+          <form
+            hx-post="/search"
+            hx-target="#search-result"
+            hx-swap="innerHTML"
+            class="grid md:grid-cols-[1fr_auto_auto_auto] gap-3 items-center"
+          >
+            <input
+              type="text"
+              name="q"
+              placeholder="Type your question..."
+              class="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"
+            />
+            <input
+              type="number"
+              name="k"
+              value="5"
+              min="1"
+              max="20"
+              class="w-20 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"
+            />
+            <label class="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                name="rerank"
+                value="1"
+                class="rounded border-slate-300"
+              />
+              Rerank
+            </label>
+            <div class="flex items-center gap-2">
+              <span class="text-sm">Pool</span>
+              <input
+                type="number"
+                name="pool"
+                value="25"
+                min="5"
+                max="50"
+                class="w-20 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"
+              />
+            </div>
+            <input
+              type="text"
+              name="source"
+              placeholder="source filter (title or path)"
+              class="md:col-span-2 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"
+            />
+            <button
+              class="md:col-start-4 px-3 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700"
+            >
+              Search
+            </button>
+          </form>
+          <div id="search-result" class="mt-4"></div>
+        </section>
+
+        <section
+          class="md:col-span-2 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 md:p-6 shadow-soft"
+        >
+          <h2 class="text-lg font-semibold mb-4">Admin</h2>
+          <div class="flex flex-wrap gap-3">
+            <form
+              hx-get="/admin/list_docs"
+              hx-target="#admin-list"
+              hx-swap="innerHTML"
+            >
+              <button
+                class="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                List Documents
+              </button>
+            </form>
+            <form
+              class="flex items-center gap-2"
+              hx-post="/admin/delete"
+              hx-target="#admin-delete"
+              hx-swap="innerHTML"
+            >
+              <input
+                type="text"
+                name="name"
+                placeholder="title or full path"
+                class="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"
+              />
+              <button
+                class="px-3 py-2 rounded-lg border border-rose-200 text-rose-700 dark:border-rose-800 hover:bg-rose-50 dark:hover:bg-rose-900/30"
+              >
+                Delete Document
+              </button>
+            </form>
+            <form
+              hx-post="/admin/reindex"
+              hx-target="#admin-reindex"
+              hx-swap="innerHTML"
+            >
+              <button
+                class="px-3 py-2 rounded-lg bg-accent-600 text-white hover:bg-accent-700"
+              >
+                Rebuild Index
+              </button>
+            </form>
+          </div>
+          <div id="admin-list" class="mt-3 text-sm"></div>
+          <div id="admin-delete" class="mt-3 text-sm"></div>
+          <div id="admin-reindex" class="mt-3 text-sm"></div>
+        </section>
+      </main>
+    </div>
+
+    <div
+      id="modal"
+      class="fixed inset-0 hidden bg-black/60 backdrop-blur-sm z-50 p-4 md:p-8"
+    >
+      <div
+        class="mx-auto max-w-4xl bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-soft p-4 md:p-6 space-y-4"
+      >
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-semibold">Context</h3>
+          <button
+            onclick="closeModal()"
+            class="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+          >
+            Close
+          </button>
+        </div>
+        <div id="modal-body" class="prose max-w-none dark:prose-invert"></div>
+      </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>

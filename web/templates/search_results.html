@@ -1,0 +1,49 @@
+<div class="grid md:grid-cols-2 gap-4">
+  {% for it in items %}
+  <div
+    class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-soft p-4 space-y-3"
+  >
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span
+          class="inline-flex h-6 w-6 rounded-md bg-primary-600 text-white text-xs items-center justify-center"
+          >#{{ loop.index }}</span
+        >
+        <div class="font-semibold text-slate-800 dark:text-slate-100 truncate">
+          {{ it['doc_title'] or 'untitled' }}
+        </div>
+      </div>
+      <span
+        class="px-2 py-1 rounded-md text-xs bg-accent-100 text-accent-700 dark:bg-accent-900/40 dark:text-accent-200"
+        >score {{ '%.3f'|format(it['score'] or 0.0) }}</span
+      >
+    </div>
+    <div class="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
+      {{ it['text'] }}
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <button
+        class="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+        hx-get="/openctx?chunk_id={{ it['chunk_id'] }}&w=1"
+        hx-target="#modal-body"
+        hx-swap="innerHTML"
+        onclick="openModal()"
+      >
+        View context
+      </button>
+      <span class="text-xs text-slate-500 truncate"
+        >Source: {{ it['doc_path'] }}</span
+      >
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% if answer %}
+<div
+  class="mt-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-soft p-4"
+>
+  <h3 class="text-base font-semibold mb-2">Answer</h3>
+  <div class="whitespace-pre-wrap text-sm">{{ answer }}</div>
+</div>
+{% endif %}

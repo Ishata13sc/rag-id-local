@@ -1,0 +1,20 @@
+<div class="space-y-2">
+  {% for name in files %}
+  <button
+    class="w-full flex items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3 hover:bg-primary-50 dark:hover:bg-slate-700/60 transition text-left"
+    hx-get="/ingest?filename={{ name | urlencode }}"
+    hx-target="#ingest-result"
+    hx-indicator="#ingest-ind"
+    hx-swap="innerHTML"
+  >
+    <span class="truncate text-sm">{{ name }}</span>
+    <span class="px-2 py-1 text-xs rounded-md bg-primary-600 text-white"
+      >Ingest</span
+    >
+  </button>
+  {% endfor %} {% if files|length == 0 %}
+  <div class="text-sm text-slate-500">
+    No files found in <code>data/uploads</code>.
+  </div>
+  {% endif %}
+</div>
